@@ -3,12 +3,18 @@ public static final int WIDTH = 1200;
 public static final int HEIGHT = 800;
 public static final int FLOOR_Y = HEIGHT - 80;
 public static final int FULL_WIDTH = 1200*8;
+public static final int TILE_SIZE_W = WIDTH/20;
+public static final int TILE_SIZE_H = HEIGHT/20;
+public static final int NUM_TILES_W = FULL_WIDTH/TILE_SIZE_W;
+public static final int NUM_TILES_H = HEIGHT/TILE_SIZE_H;
 
 // GAME STATE VALUES
 public static final int SPLASH = 0;
 public static final int MENU = 1;
 public static final int LEVEL = 2;
 public static final int INVENTORY = 3;
+
+public static final long TIMER_MAX = 30000;
 
 // GAME
 int gameState;
@@ -44,6 +50,8 @@ UserForce jetpackForce ;
 // Holds all the force generators and the particles they apply to
 ForceRegistry forceRegistry ;
 
+long timer;
+
 
 void settings() {
   size(WIDTH, HEIGHT);
@@ -70,8 +78,7 @@ void setup() {
   j4l = loadImage("jetpack4l.png");
   
   astronaut = new Astronaut();
-  gameState = MENU;
-  
+  gameState = MENU;  
   
   //Create a gravitational force
   Gravity gravity = new Gravity(new PVector(0f, .5f)) ;
@@ -93,9 +100,11 @@ void draw() {
   switch (gameState) {
     case SPLASH:
       break;
+      
     case MENU:
       drawMenu();
       break;
+      
     case LEVEL:
       level.bgDraw();
       level.moveCamera(astronaut.position.x, astronaut.position.x + astronaut.astroWidth);
@@ -104,12 +113,19 @@ void draw() {
       astronaut.checkBounds();
       level.backgroundScroll(astronaut.position.x, astronaut.velocity.x);
       level.draw();
-      astronaut.draw();
       
-      text("Astro x = " + astronaut.position.x, level.camera.pos.x + 40, 40);
-      text("Camera x = " + level.camera.pos.x, level.camera.pos.x + 200, 40);
-      text("FPS = " + frameRate, level.camera.pos.x + 360, 40);
+      /*noFill();
+      stroke(255,255,255);
+      for (int i = 0; i < 20; i++) {
+        for (int j = 0; j < 20; j++) {
+          rect(i*(WIDTH/20), j*(HEIGHT/20), WIDTH/20, HEIGHT/20);
+        }
+      }*/
+      
+      astronaut.draw();      
+      drawLevelStats();
       break;
+      
     case INVENTORY:
       break;
   }
@@ -187,9 +203,47 @@ void keyTyped() {
 
 void levelSetup() {
   level = new Level();
+  timer = millis();
+  astronaut.reset();
+  leftForce.set(0f, 0f);
+  rightForce.set(0f, 0f);
+  jetpackForce.set(0f, 0f);
 }
 
 // menu screen
 void drawMenu() {
   image(menuImg, 0, 0);
+}
+
+void drawLevelStats() {
+    /*text("Astro x = " + astronaut.position.x, level.camera.pos.x + 40, 40);
+  text("Camera x = " + level.camera.pos.x, level.camera.pos.x + 200, 40);
+  text("FPS = " + frameRate, level.camera.pos.x + 360, 40);*/
+
+  textSize(18);
+  text("Time", level.camera.pos.x + 30, 42);
+  
+  if (!drawTimer()) {
+    gameState = MENU;
+  }
+}
+
+boolean drawTimer() {
+  long currTime = millis();
+  float r = ((float)currTime - timer) / TIMER_MAX;
+  float tWidth = 420 - (r * 420);
+  rect(level.camera.pos.x + 90, 20, tWidth, 30);
+  noFill();
+  stroke(255,255,255);
+  rect(level.camera.pos.x + 90, 20, 420, 30);
+  
+  return tWidth >= 1;
+}
+
+public static PVector toTile(float x, float y) {
+  return new PVector(floor(x/TILE_SIZE_W), floor(y/TILE_SIZE_H));
+}
+
+public static PVector toXY(PVector tile) {
+  return new PVector(tile.x*TILE_SIZE_W, tile.y*TILE_SIZE_H);
 }
