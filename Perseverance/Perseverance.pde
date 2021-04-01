@@ -15,6 +15,7 @@ public static final int LEVEL = 2;
 public static final int INVENTORY = 3;
 
 public static final long TIMER_MAX = 30000;
+public static final long JETPACK_MAX = 150;
 
 // GAME
 int gameState;
@@ -110,6 +111,10 @@ void draw() {
       level.moveCamera(astronaut.position.x, astronaut.position.x + astronaut.astroWidth);
       forceRegistry.updateForces();
       astronaut.integrate();
+      if (astronaut.jetpack && !astronaut.jetpackAvailable()) {
+        astronaut.jetpack = false;
+        jetpackForce.set(0f, 0f);
+      }
       astronaut.checkBounds();
       level.backgroundScroll(astronaut.position.x, astronaut.velocity.x);
       level.draw();
@@ -147,9 +152,11 @@ void keyPressed() {
             rightForce.set(25, 0);
             break;
           case UP :
-            astronaut.jetpack = true;
-            astronaut.jetpackTransition = true;
-            jetpackForce.set(0, -150);
+            if (astronaut.jetpackAvailable()) {
+              astronaut.jetpack = true;
+              astronaut.jetpackTransition = true;
+              jetpackForce.set(0, -150);
+            }
             break;
           case DOWN :
             break;
@@ -173,10 +180,12 @@ void keyReleased() {
             rightForce.set(0, 0);
             break;
           case UP :
-            astronaut.jetpack = false;
-            astronaut.jetpackTransition = true;
-            jetpackForce.set(0, 0);
-            break;
+           if (astronaut.jetpackAvailable()) {
+              astronaut.jetpack = false;
+              astronaut.jetpackTransition = true;
+              jetpackForce.set(0, 0);
+              break;
+           }
           case DOWN :
             break;
         }
@@ -226,6 +235,9 @@ void drawLevelStats() {
   if (!drawTimer()) {
     gameState = MENU;
   }
+  
+  text("Fuel", level.camera.pos.x + 600, 42);
+  drawJetpackFuel();
 }
 
 boolean drawTimer() {
@@ -238,6 +250,18 @@ boolean drawTimer() {
   rect(level.camera.pos.x + 90, 20, 420, 30);
   
   return tWidth >= 1;
+}
+
+void drawJetpackFuel() {
+  float r = ((float)JETPACK_MAX - astronaut.jetpackUsed) / JETPACK_MAX;
+  float jetpackWidth = r * 420;
+  fill(255,255,255);
+  if (astronaut.jetpackAvailable()) {
+    rect(level.camera.pos.x + 660, 20, jetpackWidth, 30);
+  }
+  noFill();
+  stroke(255,255,255);
+  rect(level.camera.pos.x + 660, 20, 420, 30);
 }
 
 public static PVector toTile(float x, float y) {

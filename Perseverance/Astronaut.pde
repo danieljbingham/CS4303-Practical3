@@ -12,6 +12,7 @@ class Astronaut extends Particle {
   boolean jetpack;
   boolean jetpackTransition;
   int frame;
+  int jetpackUsed;
 
   public Astronaut() {
     super(150, FLOOR_Y-49, 0, 0, 0.01f);
@@ -21,12 +22,15 @@ class Astronaut extends Particle {
     jetpack = false;
     jetpackTransition = false;
     frame = 0;
+    jetpackUsed = 0;
   }
 
   // update position and velocity
   void integrate() {
     // If infinite mass, we don't integrate
     if (invMass <= 0f) return ;
+    
+    if (jetpack) jetpackUsed++;
     
     boolean resetXVel = false;
     boolean resetYVel = false;
@@ -91,6 +95,7 @@ class Astronaut extends Particle {
     jetpack = false;
     jetpackTransition = false;
     frame = 0;
+    jetpackUsed = 0;
     
     position = new PVector(150, FLOOR_Y-49) ;
     velocity = new PVector(0, 0) ;
@@ -183,6 +188,10 @@ class Astronaut extends Particle {
     if (position.y + astroHeight > FLOOR_Y) {
       position.y = FLOOR_Y - astroHeight;
     }
+  }
+  
+  boolean jetpackAvailable() {
+    return jetpackUsed <= JETPACK_MAX;
   }
   
   
