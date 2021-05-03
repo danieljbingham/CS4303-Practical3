@@ -10,13 +10,20 @@ class Particle {
   
   // damping factor to simulate drag, as per Millington
   // Disabled when using Drag Force Generator
-  static final float DAMPING = .97f ;
+  static final float DAMPING = .995f ;
   
   // Store inverse mass to allow simulation of infinite mass
   float invMass ;
   
   // If you do need the mass, here it is:
   public float getMass() {return 1/invMass ;}
+  
+  Particle() {
+    position = new PVector(0, 0) ;
+    velocity = new PVector(0, 0) ;
+    forceAccumulator = new PVector(0, 0) ;
+    invMass = 1 ;    
+  }
   
   Particle(int x, int y, float xVel, float yVel, float invM) {
     position = new PVector(x, y) ;

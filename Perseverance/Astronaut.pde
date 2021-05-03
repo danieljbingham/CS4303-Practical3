@@ -13,6 +13,8 @@ class Astronaut extends Particle {
   boolean jetpackTransition;
   int frame;
   int jetpackUsed;
+  
+  Rover rover;
 
   public Astronaut() {
     super(150, FLOOR_Y-49, 0, 0, 0.01f);
@@ -23,6 +25,7 @@ class Astronaut extends Particle {
     jetpackTransition = false;
     frame = 0;
     jetpackUsed = 0;
+    rover = new Rover();
   }
 
   // update position and velocity
@@ -49,7 +52,8 @@ class Astronaut extends Particle {
       //if (!level.isXCollision(xBound, newPos.y, astroHeight)) {
       //  position.x += velocity.x;
       //}
-      
+      if (position.x < 0) position.x = 0;
+
       if (velocity.y != 0) {
         float yBound = velocity.y < 0 ? position.y : position.y + astroHeight;
         int incrementY = int(velocity.y/abs(velocity.y));
@@ -65,6 +69,7 @@ class Astronaut extends Particle {
       //}
     } else {
       position.add(velocity) ;
+      if (position.x < 0) position.x = 0;
     }
     
     // update position
@@ -78,7 +83,7 @@ class Astronaut extends Particle {
     // update velocity
     velocity.add(resultingAcceleration) ;
     // apply damping - disabled when Drag force present
-    velocity.mult(DAMPING) ;
+    velocity.mult(.97f) ;
     
     // Clear accumulator
     forceAccumulator.x = 0 ;
@@ -86,6 +91,8 @@ class Astronaut extends Particle {
     
     if (resetXVel) velocity.x = 0;
     if (resetYVel) velocity.y = 0;
+    
+    rover.setPos(position.x);
     
   }
 
@@ -102,13 +109,10 @@ class Astronaut extends Particle {
   }
 
   void draw() {
+    rover.draw();
     fill(255, 255, 255);
-    //println(position);
-    //rect(position.x, position.y, astroWidth, astroHeight);
     float yShift = position.y-5; // accounts for sprite variation
     
-    //println(position.y, "+", astroHeight, " < ", FLOOR_Y);
-    //println(right, left, jetpack, velocity);
     if (rightFacing) {
       if ((!right && !left && !jetpack) || (!jetpack && position.y+astroHeight < FLOOR_Y && !onPlatform)) {
         image(r1, position.x, yShift);
@@ -192,6 +196,14 @@ class Astronaut extends Particle {
   
   boolean jetpackAvailable() {
     return jetpackUsed <= JETPACK_MAX;
+  }
+  
+  boolean isGrounded() {
+    return onPlatform || position.y + astroHeight >= FLOOR_Y;
+  }
+  
+  void jump() {
+    velocity.y = -9;
   }
   
   

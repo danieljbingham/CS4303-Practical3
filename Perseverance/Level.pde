@@ -75,6 +75,7 @@ class Level {
     
     noStroke();
     fill(225, 78, 44);
+    rect(0, height - 280, width, 40);
     rect(0, height - 80, width, 80);
 
   }

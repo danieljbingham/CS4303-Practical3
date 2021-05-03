@@ -1,7 +1,8 @@
 // GAME DIMENSIONS
 public static final int WIDTH = 1200;
 public static final int HEIGHT = 800;
-public static final int FLOOR_Y = HEIGHT - 80;
+public static final int FLOOR_Y = HEIGHT - 280;
+public static final int ROVER_FLOOR_Y = HEIGHT - 80;
 public static final int FULL_WIDTH = 1200*8;
 public static final int TILE_SIZE_W = WIDTH/20;
 public static final int TILE_SIZE_H = HEIGHT/20;
@@ -21,6 +22,7 @@ public static final long JETPACK_MAX = 150;
 int gameState;
 Level level;
 Astronaut astronaut;
+Rock rock;
 
 // IMAGES
 public static PImage menuImg;
@@ -41,7 +43,7 @@ public static PImage j2r;
 public static PImage j3r;
 public static PImage j4r;
 
-Camera camera;
+Button playBtn;
 
 
 // A force generator that applies a force specified by the user.
@@ -78,8 +80,11 @@ void setup() {
   j3l = loadImage("jetpack3l.png");
   j4l = loadImage("jetpack4l.png");
   
+  playBtn = new Button(100, 200, "Play");
+  
   astronaut = new Astronaut();
-  gameState = MENU;  
+  gameState = MENU; 
+  rock = new Rock();
   
   //Create a gravitational force
   Gravity gravity = new Gravity(new PVector(0f, .5f)) ;
@@ -94,6 +99,8 @@ void setup() {
   forceRegistry.add(astronaut, leftForce) ;
   forceRegistry.add(astronaut, rightForce) ;
   forceRegistry.add(astronaut, jetpackForce) ;
+  
+  forceRegistry.add(rock, gravity);
   
 }
 
@@ -111,6 +118,14 @@ void draw() {
       level.moveCamera(astronaut.position.x, astronaut.position.x + astronaut.astroWidth);
       forceRegistry.updateForces();
       astronaut.integrate();
+      rock.integrate();
+      
+      if (rock.outOfScreen(level.camera.pos.x - 20)) {
+        if (random(0,1) < 0.05) {
+          rock.fireRock(int(level.camera.pos.x + width));
+        }
+      }
+      
       if (astronaut.jetpack && !astronaut.jetpackAvailable()) {
         astronaut.jetpack = false;
         jetpackForce.set(0f, 0f);
@@ -127,7 +142,8 @@ void draw() {
         }
       }*/
       
-      astronaut.draw();      
+      astronaut.draw();
+      rock.draw();
       drawLevelStats();
       break;
       
@@ -137,6 +153,7 @@ void draw() {
 }
 
 void keyPressed() {
+  
   switch (gameState) {
     case LEVEL:
       if (key == CODED) {
@@ -156,6 +173,8 @@ void keyPressed() {
               astronaut.jetpack = true;
               astronaut.jetpackTransition = true;
               jetpackForce.set(0, -150);
+            } else if (astronaut.isGrounded()) {
+              astronaut.jump();
             }
             break;
           case DOWN :
@@ -214,6 +233,7 @@ void levelSetup() {
   level = new Level();
   timer = millis();
   astronaut.reset();
+  rock.reset();
   leftForce.set(0f, 0f);
   rightForce.set(0f, 0f);
   jetpackForce.set(0f, 0f);
@@ -222,6 +242,7 @@ void levelSetup() {
 // menu screen
 void drawMenu() {
   image(menuImg, 0, 0);
+  playBtn.draw(false);
 }
 
 void drawLevelStats() {
@@ -238,6 +259,9 @@ void drawLevelStats() {
   
   text("Fuel", level.camera.pos.x + 600, 42);
   drawJetpackFuel();
+  
+  text("Rover Health", level.camera.pos.x + 30, height-35);
+  drawHealth();
 }
 
 boolean drawTimer() {
@@ -262,6 +286,17 @@ void drawJetpackFuel() {
   noFill();
   stroke(255,255,255);
   rect(level.camera.pos.x + 660, 20, 420, 30);
+}
+
+void drawHealth() {
+  long currTime = millis();
+  float r = ((float)currTime - timer) / TIMER_MAX;
+  float tWidth = 420 - (r * 420);
+  fill(255,255,255);
+  rect(level.camera.pos.x + 160, height-55, tWidth, 30);
+  noFill();
+  stroke(255,255,255);
+  rect(level.camera.pos.x + 160, height-55, 420, 30);
 }
 
 public static PVector toTile(float x, float y) {

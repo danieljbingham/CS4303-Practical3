@@ -20,7 +20,7 @@ public final class Gravity extends ForceGenerator {
     //apply mass-scaled force to the particle
     PVector resultingForce = gravity.get();
     resultingForce.mult(particle.getMass());
-    if (particle.position.y + 60 < FLOOR_Y) {
+    if (particle.position.y + 60 < FLOOR_Y) { //<>//
       particle.addForce(resultingForce);
     }
   }
