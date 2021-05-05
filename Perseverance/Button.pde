@@ -17,7 +17,7 @@ class Button {
     y >= position.y && y <= position.y + btnHeight;
   }
   
-  public void draw(boolean hover) {
+  public void draw() {
 
     push();
     fill(0);

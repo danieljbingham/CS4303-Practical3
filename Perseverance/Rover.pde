@@ -1,6 +1,10 @@
 class Rover extends Particle {
 
   private final PImage img = loadImage("rover.png");
+  int roverWidth = 80;
+  int roverHeight = 40;
+  
+  int hits = 0;
 
   public Rover() {
     super(150, height-80-40, 0, 0, 0.01f);

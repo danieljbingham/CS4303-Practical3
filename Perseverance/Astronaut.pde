@@ -106,6 +106,8 @@ class Astronaut extends Particle {
     
     position = new PVector(150, FLOOR_Y-49) ;
     velocity = new PVector(0, 0) ;
+    
+    rover.hits = 0;
   }
 
   void draw() {
@@ -194,15 +196,20 @@ class Astronaut extends Particle {
     }
   }
   
-  boolean jetpackAvailable() {
-    return jetpackUsed <= JETPACK_MAX;
+  boolean jetpackAvailable(long max) {
+    return jetpackUsed <= max;
   }
   
   boolean isGrounded() {
     return onPlatform || position.y + astroHeight >= FLOOR_Y;
   }
   
-  void jump() {
+  void jump(long max) {
+    if (jetpackAvailable(max)) {
+        velocity.y = -2;
+    } else {
+        velocity.y = -9;
+    }
     velocity.y = -9;
   }
   
