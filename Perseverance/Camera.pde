@@ -30,4 +30,5 @@ class Camera {
     
     translate(-pos.x, 0);
   }
+
 }

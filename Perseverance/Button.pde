@@ -8,8 +8,8 @@ class Button {
   public Button(int x, int y, String text) {
     position = new PVector(x, y);
     this.text = text;
-    btnWidth = 100;
-    btnHeight = 50;
+    btnWidth = 200;
+    btnHeight = 60;
   }
   
   public boolean inButton(int x, int y) {

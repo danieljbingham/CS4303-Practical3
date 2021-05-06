@@ -19,16 +19,19 @@ public static final long TIMER_MAX = 60000;
 public static final long JETPACK_MAX = 300;
 public static final int LIVES_MAX = 5;
 
-public static final long currTimerMax = 10000;
-public static final long currJetpackMax = 50;
-public static final int currLivesMax = 1;
-
-
 // GAME
 int gameState;
 Level level;
 Astronaut astronaut;
 Rock rock;
+
+// UPGRADEABLE ATTRIBUTES
+public static long currTimerMax = 10000;
+public static long currSpeedMax = 1;
+public static long currJetpackMax = 50;
+public static int currLivesMax = 1;
+public static int currAmmo = 1;
+
 
 // IMAGES
 public static PImage menuImg;
@@ -94,13 +97,13 @@ void setup() {
   j3l = loadImage("jetpack3l.png");
   j4l = loadImage("jetpack4l.png");
   
-  playBtn = new Button(100, 200, "Play");
+  playBtn = new Button(500, 680, "Play");
   upBtn1 = new UpgradeButton(100, 300, "Time");
   upBtn2 = new UpgradeButton(450, 300, "Astronaut Speed");
   upBtn3 = new UpgradeButton(800, 300, "Jetpack Fuel");
   upBtn4 = new UpgradeButton(100, 500, "Rover Strength");
   upBtn5 = new UpgradeButton(450, 500, "Ammo Reload");
-  upBtn6 = new UpgradeButton(800, 500, "Up6");
+  upBtn6 = new UpgradeButton(800, 500, "Ammo Aim");
   
   astronaut = new Astronaut();
   gameState = MENU; 
@@ -265,6 +268,9 @@ void mouseClicked() {
     case UPGRADES:
       if (upBtn1.inButton(mouseX, mouseY)) {
         println("Click");
+      } else if (playBtn.inButton(mouseX, mouseY)) {
+        gameState = LEVEL;
+        levelSetup();
       }
   }
 }
@@ -282,7 +288,6 @@ void levelSetup() {
 // menu screen
 void drawMenu() {
   image(menuImg, 0, 0);
-  playBtn.draw();
 }
 
 // upgrades screen
@@ -296,6 +301,8 @@ void drawUpgrades() {
   upBtn4.draw();
   upBtn5.draw();
   upBtn6.draw();
+  playBtn.draw();
+  textAlign(LEFT);
 }
 
 void drawLevelStats() {
@@ -308,11 +315,12 @@ void drawLevelStats() {
   
   if (!drawTimer()) {
     gameState = UPGRADES;
+    //gameState = MENU;
   }
   
   text("Fuel", level.camera.pos.x + 600, 42);
   drawJetpackFuel();
-  
+    
   text("Rover Health", level.camera.pos.x + 30, height-35);
   drawHealth();
 }
@@ -372,6 +380,7 @@ boolean roverCollision() {
       rock.active = false;
       if (rover.hits == currLivesMax) {
         gameState = UPGRADES;
+        //gameState = MENU;
       }
       return true; 
     }

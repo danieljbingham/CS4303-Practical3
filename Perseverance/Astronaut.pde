@@ -103,6 +103,9 @@ class Astronaut extends Particle {
     jetpackTransition = false;
     frame = 0;
     jetpackUsed = 0;
+    right = false;
+    left = false;
+    jetpack = false;
     
     position = new PVector(150, FLOOR_Y-49) ;
     velocity = new PVector(0, 0) ;
