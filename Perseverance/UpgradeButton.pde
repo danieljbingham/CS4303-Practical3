@@ -1,14 +1,14 @@
 class UpgradeButton extends Button {
 
-  public UpgradeButton(int x, int y, String text) {
-    super(x, y, text);
-    btnWidth = 300;
-    btnHeight = 125;
+  public UpgradeButton(int x, int y, int w, int h, String text) {
+    super(x, y, w, h, text);
   }
   
-  public void draw() {
+  public void draw(String subtext) {
     push();
+    textSize(18);
     fill(0);
+    stroke(255,255,255);
     if (inButton(mouseX, mouseY)) {
       fill(40);
     }
@@ -16,7 +16,7 @@ class UpgradeButton extends Button {
     textAlign(CENTER,CENTER);
     fill(255);
     text(text, position.x + (btnWidth / 2), position.y + (btnHeight / 2) - 20);
-    text(text, position.x + (btnWidth / 2), position.y + (btnHeight / 2) + 20);
+    text(subtext, position.x + (btnWidth / 2), position.y + (btnHeight / 2) + 20);
     pop();
   }
 }

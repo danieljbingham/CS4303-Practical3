@@ -1,12 +1,18 @@
 final class Rock extends Particle {
   
   public boolean active;
-  private final PImage img = loadImage("rock.png");
+  public boolean exploding;
   int imgRotation = 0; // hold current rotation value
+  int radius;
+  int frame = 0;
+  float resize;
   
   Rock() {
     active = false;
+    exploding = false;
     invMass = 1f;
+    resize = random(5,11)/10;
+    radius = int((rockImg[0].width/2)*resize);
   }
   
   // draw shell
@@ -16,11 +22,24 @@ final class Rock extends Particle {
       imageMode(CENTER);
       translate(position.x, position.y);
       rotate(radians(imgRotation));
-      image(img, 0, 0);
+      image(rockImg[frame], 0, 0, rockImg[0].width*resize, rockImg[0].height*resize);
       rotate(radians(-imgRotation));
       translate(-position.x, -position.y);
       imageMode(CORNER);
       imgRotation = (imgRotation - 5) % 360;
+      
+      if (exploding) {
+        textAlign(CENTER);
+        fill(255,220,0);
+        text("+1", position.x, position.y);
+        textAlign(LEFT);
+        frame++;
+        if (frame == rockImg.length) {
+          exploding = false;
+          active = false;
+          frame = 0;
+        }
+      }
     }
   }
   
@@ -80,6 +99,8 @@ final class Rock extends Particle {
   
   void reset() {
     active = false;
+    exploding = false;
+    frame = 0;
     position = new PVector(0, 0) ;
     velocity = new PVector(0, 0) ;
 

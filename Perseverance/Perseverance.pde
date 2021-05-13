@@ -3,7 +3,7 @@ public static final int WIDTH = 1200;
 public static final int HEIGHT = 800;
 public static final int FLOOR_Y = HEIGHT - 280;
 public static final int ROVER_FLOOR_Y = HEIGHT - 80;
-public static final int FULL_WIDTH = 1200*8;
+public static final int FULL_WIDTH = 1200*6;
 public static final int TILE_SIZE_W = WIDTH/20;
 public static final int TILE_SIZE_H = HEIGHT/20;
 public static final int NUM_TILES_W = FULL_WIDTH/TILE_SIZE_W;
@@ -12,26 +12,31 @@ public static final int NUM_TILES_H = HEIGHT/TILE_SIZE_H;
 // GAME STATE VALUES
 public static final int SPLASH = 0;
 public static final int MENU = 1;
-public static final int LEVEL = 2;
-public static final int UPGRADES = 3;
+public static final int SAVES = 2;
+public static final int LEVEL = 3;
+public static final int UPGRADES = 4;
 
 public static final long TIMER_MAX = 60000;
+public static final long SPEED_MAX = 10;
 public static final long JETPACK_MAX = 300;
-public static final int LIVES_MAX = 5;
+public static final int LIVES_MAX = 10;
+
+public static int gameId = 0;
 
 // GAME
 int gameState;
 Level level;
 Astronaut astronaut;
 Rock rock;
+ArrayList<Ammo> ammo;
 
 // UPGRADEABLE ATTRIBUTES
 public static long currTimerMax = 10000;
-public static long currSpeedMax = 1;
-public static long currJetpackMax = 50;
+public static float currSpeedMax = 2;
+public static long currJetpackMax = 15;
 public static int currLivesMax = 1;
-public static int currAmmo = 1;
-
+public static int currAmmo = 90;
+public static float currAccuracy = 0.9;
 
 // IMAGES
 public static PImage menuImg;
@@ -53,6 +58,18 @@ public static PImage j2r;
 public static PImage j3r;
 public static PImage j4r;
 
+public static PImage[] rockImg = new PImage[5];
+
+// menu buttons
+Button newGameBtn;
+Button continueGameBtn;
+
+// saves buttons
+UpgradeButton saveBtn1;
+UpgradeButton saveBtn2;
+UpgradeButton saveBtn3;
+
+// upgrade screen buttons
 Button playBtn;
 UpgradeButton upBtn1;
 UpgradeButton upBtn2;
@@ -61,6 +78,8 @@ UpgradeButton upBtn4;
 UpgradeButton upBtn5;
 UpgradeButton upBtn6;
 
+// save game summaries
+String[] saveSummaries = new String[3];
 
 // A force generator that applies a force specified by the user.
 UserForce leftForce ;
@@ -70,7 +89,8 @@ UserForce jetpackForce ;
 ForceRegistry forceRegistry ;
 
 long timer;
-
+int ammoReload;
+int coins;
 
 void settings() {
   size(WIDTH, HEIGHT);
@@ -97,17 +117,29 @@ void setup() {
   j3l = loadImage("jetpack3l.png");
   j4l = loadImage("jetpack4l.png");
   
-  playBtn = new Button(500, 680, "Play");
-  upBtn1 = new UpgradeButton(100, 300, "Time");
-  upBtn2 = new UpgradeButton(450, 300, "Astronaut Speed");
-  upBtn3 = new UpgradeButton(800, 300, "Jetpack Fuel");
-  upBtn4 = new UpgradeButton(100, 500, "Rover Strength");
-  upBtn5 = new UpgradeButton(450, 500, "Ammo Reload");
-  upBtn6 = new UpgradeButton(800, 500, "Ammo Aim");
+  for (int i = 0; i < 5; i++) {
+    rockImg[i] = loadImage("rock" + i + ".png");
+  }
+  
+  newGameBtn = new Button(450, 300, 300, 120, "New Game");
+  continueGameBtn = new Button(450, 500, 300, 120, "Continue Game");
+
+  saveBtn1 = new UpgradeButton(400, 250, 400, 125, "Save slot 1");
+  saveBtn2 = new UpgradeButton(400, 425, 400, 125, "Save slot 2");
+  saveBtn3 = new UpgradeButton(400, 600, 400, 125, "Save slot 3");
+
+  playBtn = new Button(500, 680, 200, 60, "Play");
+  upBtn1 = new UpgradeButton(100, 300, 300, 125, "Time");
+  upBtn2 = new UpgradeButton(450, 300, 300, 125, "Astronaut Speed");
+  upBtn3 = new UpgradeButton(800, 300, 300, 125, "Jetpack Fuel Efficiency");
+  upBtn4 = new UpgradeButton(100, 500, 300, 125, "Rover Strength");
+  upBtn5 = new UpgradeButton(450, 500, 300, 125, "Ammo Reload Speed");
+  upBtn6 = new UpgradeButton(800, 500, 300, 125, "Ammo Accuracy");
   
   astronaut = new Astronaut();
   gameState = MENU; 
   rock = new Rock();
+  ammo = new ArrayList();
   
   //Create a gravitational force
   Gravity gravity = new Gravity(new PVector(0f, .5f)) ;
@@ -135,6 +167,10 @@ void draw() {
     case MENU:
       drawMenu();
       break;
+    
+    case SAVES:
+      drawSaves();
+      break;
       
     case LEVEL:
       level.bgDraw();
@@ -143,9 +179,10 @@ void draw() {
       astronaut.integrate();
       rock.integrate();
       roverCollision();
+      ammoCollision();
       
-      if (rock.outOfScreen(level.camera.pos.x - 20)) {
-        if (random(0,1) < 0.05) {
+      if ((rock.outOfScreen(level.camera.pos.x - 20) || !rock.active) && !rock.exploding) {
+        if (random(0,1) < 0.04) {
           rock.fireRock(int(level.camera.pos.x + width));
         }
       }
@@ -168,6 +205,23 @@ void draw() {
       
       astronaut.draw();
       rock.draw();
+      
+      Iterator<Ammo> itr = ammo.iterator();
+      while (itr.hasNext()) {
+        Ammo a = itr.next();
+        a.integrate();
+        a.draw();
+        if (a.outOfScreen(level.camera.pos.x)) {
+          itr.remove();
+        }
+      }
+      
+      if (ammoReload > 0) {
+        ammoReload--;
+      }
+      
+      checkPickups();
+
       drawLevelStats();
       break;
       
@@ -186,18 +240,18 @@ void keyPressed() {
           case LEFT :
             astronaut.left = true;
             astronaut.rightFacing = false;
-            leftForce.set(-25, 0);
+            leftForce.set(-5*currSpeedMax, 0);
             break;
           case RIGHT :
             astronaut.right = true;
             astronaut.rightFacing = true;
-            rightForce.set(25, 0);
+            rightForce.set(5*currSpeedMax, 0);
             break;
           case UP :
             if (astronaut.jetpackAvailable(currJetpackMax)) {
               astronaut.jetpack = true;
               astronaut.jetpackTransition = true;
-              jetpackForce.set(0, -150);
+              jetpackForce.set(0, -110);
             }
             
             if (astronaut.isGrounded()) {
@@ -206,6 +260,13 @@ void keyPressed() {
             break;
           case DOWN :
             break;
+        }
+      } else {
+        if (key == ' ') {
+          if (ammoReload == 0) {
+            ammo.add(new Ammo(astronaut.rover.position.copy(), rock.position.copy(), rock.velocity.copy(), rock.active, currAccuracy));
+            ammoReload = currAmmo;
+          }
         }
       }
       break;
@@ -240,38 +301,98 @@ void keyReleased() {
   }
 }
 
-void keyTyped() {
-  switch (gameState) {
-    case MENU:
-      if (key == ' ') {
-        // start game
-        gameState = LEVEL;
-        levelSetup();
-      }
-      break;
-    case LEVEL:
-      break;
-    case UPGRADES:
-      if (key == ' ') {
-        // start game
-        gameState = MENU;
-        levelSetup();
-      }
-      break;
-  }
-}
-
 void mouseClicked() {
   switch (gameState) {
     case MENU:
+      if (newGameBtn.inButton(mouseX, mouseY)) {
+        gameState = LEVEL;
+        levelSetup();
+      } else if (continueGameBtn.inButton(mouseX, mouseY)) {
+        gameState = SAVES;
+        for (int i = 0; i < 3; i++) {
+          if (new File("saves/save" + (i+1) + ".json").isFile()) {
+            JSONObject json = loadJSONObject("saves/save" + (i+1) + ".json");
+            saveSummaries[i] = "Save";
+          } else {
+            saveSummaries[i] = "Empty";
+          }
+        }
+      }
       break;
     case UPGRADES:
       if (upBtn1.inButton(mouseX, mouseY)) {
-        println("Click");
+        upgradeTimer();
+      } else if (upBtn2.inButton(mouseX, mouseY)) {
+        upgradeSpeed();
+      } else if (upBtn3.inButton(mouseX, mouseY)) {
+        upgradeJetpack();
+      } else if (upBtn4.inButton(mouseX, mouseY)) {
+        upgradeLives();
+      } else if (upBtn5.inButton(mouseX, mouseY)) {
+        upgradeAmmoReload();
+      } else if (upBtn6.inButton(mouseX, mouseY)) {
+        upgradeAmmoAccuracy();
       } else if (playBtn.inButton(mouseX, mouseY)) {
         gameState = LEVEL;
         levelSetup();
       }
+  }
+}
+
+void upgradeTimer() {
+  if (coins > 10) {
+    if (currTimerMax < TIMER_MAX) {
+      currTimerMax += 1000;
+      coins -= 10;
+    }
+  }
+}
+
+void upgradeSpeed() {
+  if (true) {
+    if (currSpeedMax < SPEED_MAX) {
+      currSpeedMax += 0.5;
+    }
+  }
+}
+
+void upgradeJetpack() {
+  if (true) {
+    if (currJetpackMax < JETPACK_MAX) {
+      currJetpackMax += 15;
+    }
+  }
+}
+
+void upgradeLives() {
+  if (true) {
+    if (currLivesMax < LIVES_MAX) {
+      currLivesMax += 1;
+    }
+  }
+}
+
+void upgradeAmmoReload() {
+  if (true) {
+    if (currAmmo > 15) {
+      currAmmo -= 5;
+    }
+  }
+}
+
+void upgradeAmmoAccuracy() {
+  if (true) {
+    if (currAccuracy > 0) {
+      currAccuracy -= 0.1;
+    }
+  }
+}
+
+void checkPickups() {
+  PVector tile = toTile(astronaut.position.x + astronaut.astroWidth/2, astronaut.position.y + astronaut.astroHeight/2);
+  if (astronaut.position.y > 0 && astronaut.position.x < FULL_WIDTH && level.tiles[int(tile.x)][int(tile.y)] == 2) {
+    level.tiles[int(tile.x)][int(tile.y)] = 0;
+    coins += 5;
   }
 }
 
@@ -283,24 +404,44 @@ void levelSetup() {
   leftForce.set(0f, 0f);
   rightForce.set(0f, 0f);
   jetpackForce.set(0f, 0f);
+  ammoReload = 0;
+  ammo = new ArrayList();
 }
 
 // menu screen
 void drawMenu() {
   image(menuImg, 0, 0);
+  newGameBtn.draw();
+  continueGameBtn.draw();
+}
+
+// saves screen
+void drawSaves() {
+  image(upgradesImg, 0, 0);
+  saveBtn1.draw(saveSummaries[0]);
+  saveBtn2.draw(saveSummaries[1]);
+  saveBtn3.draw(saveSummaries[2]);
 }
 
 // upgrades screen
 void drawUpgrades() {
   image(upgradesImg, 0, 0);
+  
+  textAlign(LEFT);
+  text(coins + "", 1020, 252);
+  fill(255,220,0);
+  ellipse(1000, 245, 18, 18);
+  
   textAlign(CENTER);
+  fill(255,255,255);
   text("Click to upgrade", width/2, 250);
-  upBtn1.draw();
-  upBtn2.draw();
-  upBtn3.draw();
-  upBtn4.draw();
-  upBtn5.draw();
-  upBtn6.draw();
+  
+  upBtn1.draw(currTimerMax/1000 + " secs        10 coins");
+  upBtn2.draw(nf(currSpeedMax,0,1) + " m/s        10 coins");
+  upBtn3.draw(currJetpackMax/3 + "%        10 coins");
+  upBtn4.draw("Level " + currLivesMax + "        10 coins");
+  upBtn5.draw(currAmmo + "        10 coins");
+  upBtn6.draw("Level " + nf((1-currAccuracy)*10,0,0) + "        10 coins");
   playBtn.draw();
   textAlign(LEFT);
 }
@@ -310,11 +451,13 @@ void drawLevelStats() {
   text("Camera x = " + level.camera.pos.x, level.camera.pos.x + 200, 40);
   text("FPS = " + frameRate, level.camera.pos.x + 360, 40);*/
 
+  fill(255,255,255);
   textSize(18);
   text("Time", level.camera.pos.x + 30, 42);
   
   if (!drawTimer()) {
     gameState = UPGRADES;
+    saveGame();
     //gameState = MENU;
   }
   
@@ -323,6 +466,14 @@ void drawLevelStats() {
     
   text("Rover Health", level.camera.pos.x + 30, height-35);
   drawHealth();
+  
+  text("Ammo", level.camera.pos.x + 620, height-35);
+  drawAmmo();
+  
+  text(coins + "", level.camera.pos.x + 1120, 42);
+  fill(255,220,0);
+  ellipse(level.camera.pos.x + 1100, 35, 18, 18);
+
 }
 
 boolean drawTimer() {
@@ -339,14 +490,14 @@ boolean drawTimer() {
 
 void drawJetpackFuel() {
   float r = ((float)currJetpackMax - astronaut.jetpackUsed) / currJetpackMax;
-  float jetpackWidth = r * 420;
+  float jetpackWidth = r * 390;
   fill(255,255,255);
   if (astronaut.jetpackAvailable(currJetpackMax)) {
     rect(level.camera.pos.x + 660, 20, jetpackWidth, 30);
   }
   noFill();
   stroke(255,255,255);
-  rect(level.camera.pos.x + 660, 20, 420, 30);
+  rect(level.camera.pos.x + 660, 20, 390, 30);
 }
 
 void drawHealth() {
@@ -357,6 +508,32 @@ void drawHealth() {
   noFill();
   stroke(255,255,255);
   rect(level.camera.pos.x + 160, height-55, 420, 30);
+}
+
+void drawAmmo() {
+  float r = ((float)ammoReload) / currAmmo;
+  float tWidth = 360 - (r * 360);
+  fill(255,255,255);
+  rect(level.camera.pos.x + 700, height-55, tWidth, 30);
+  noFill();
+  stroke(255,255,255);
+  rect(level.camera.pos.x + 700, height-55, 360, 30);
+}
+
+void saveGame() {
+  JSONObject json = gameToJson();
+  saveJSONObject(json, "saves/save" + gameId + ".json");
+}
+
+JSONObject gameToJson() {
+  JSONObject json = new JSONObject();
+  json.setInt("runs", 0);
+  json.setLong("timer", currTimerMax);
+  json.setFloat("speed", currSpeedMax);
+  json.setLong("jetpack", currTimerMax);
+  json.setLong("lives", currLivesMax);
+  json.setInt("ammo", currAmmo);
+  return json;
 }
 
 public static PVector toTile(float x, float y) {
@@ -370,7 +547,7 @@ public static PVector toXY(PVector tile) {
 // check for collision betweek rover and rocks
 boolean roverCollision() {
   // check for collision between shell and opposition tank
-  if (rock.active) {
+  if (rock.active && !rock.exploding) {
     Rover rover = astronaut.rover;
     PVector distance = rock.position.get();
     PVector roverPos = new PVector(rover.position.x + (rover.roverWidth/2), rover.position.y + (rover.roverHeight/2));
@@ -380,9 +557,29 @@ boolean roverCollision() {
       rock.active = false;
       if (rover.hits == currLivesMax) {
         gameState = UPGRADES;
+        saveGame();
         //gameState = MENU;
       }
       return true; 
+    }
+  }
+  return false;
+}
+
+boolean ammoCollision() {
+  if (rock.active && !rock.exploding) {    
+    Iterator<Ammo> itr = ammo.iterator();
+    while (itr.hasNext()) {
+      Ammo a = itr.next();
+      PVector distance = rock.position.get();
+      distance.sub(a.position);
+      if (distance.mag() < rock.radius) {
+        // start rock explosion
+        rock.exploding = true;
+        itr.remove();
+        coins++;
+        return true;
+      }
     }
   }
   return false;

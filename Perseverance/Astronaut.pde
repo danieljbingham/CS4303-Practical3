@@ -181,6 +181,7 @@ class Astronaut extends Particle {
         }
       }
     }
+    //rect(position.x, position.y, astroWidth, astroHeight);
   }
 
   void checkBounds() {
@@ -209,7 +210,7 @@ class Astronaut extends Particle {
   
   void jump(long max) {
     if (jetpackAvailable(max)) {
-        velocity.y = -2;
+        velocity.y = -2.5;
     } else {
         velocity.y = -9;
     }

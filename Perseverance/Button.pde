@@ -5,11 +5,11 @@ class Button {
   int btnHeight;
   String text;
   
-  public Button(int x, int y, String text) {
+  public Button(int x, int y, int w, int h, String text) {
     position = new PVector(x, y);
     this.text = text;
-    btnWidth = 200;
-    btnHeight = 60;
+    btnWidth = w;
+    btnHeight = h;
   }
   
   public boolean inButton(int x, int y) {
@@ -18,9 +18,10 @@ class Button {
   }
   
   public void draw() {
-
     push();
+    textSize(18);
     fill(0);
+    stroke(255,255,255);
     if (inButton(mouseX, mouseY)) {
       fill(40);
     }

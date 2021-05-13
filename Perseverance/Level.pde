@@ -4,35 +4,19 @@ class Level {
   Camera camera;
   
   int[][] tiles;
-  //PVector[] platforms;
   
   public Level() {
     camera = new Camera();
-    //platforms = new PVector[10];
-    //for (int i = 0; i < 10; i++) {
-    //  platforms[i] = new PVector(int(random(0,2300)), int(random(100,600)));
-    //}
-    
+
     tiles = new int[NUM_TILES_W][NUM_TILES_H];
-    for (int i = 3; i < 17; i++) {
-      int r = int(random(2, tiles.length - 6));
-      for (int j = 0; j < 4; j++) {
-        tiles[r+j][i] = 1;
+    
+    Table table = loadTable("level1.csv", "csv");
+    
+    for (int i = 0; i < table.getColumnCount(); i++) {
+      for (int j = 0; j < table.getRowCount(); j++) {
+        tiles[i][j] = table.getInt(j,i);
       }
     }
-    
-    /*for (int i = 0; i < tiles[0].length; i++) {        //println();
-
-      for (int j = 0; j < tiles.length; j++) {
-        if (tiles[j][i] == 1) {
-          PVector xy = toXY(new PVector(j,i));
-          //println("rect: ", xy.x, xy.y, TILE_SIZE_W, TILE_SIZE_H);
-          //print("_");
-        } else {
-          //print(".");
-        }
-      }
-    }*/
 
   }
   
@@ -45,8 +29,12 @@ class Level {
       for (int j = 0; j < tiles.length; j++) {
         if (tiles[j][i] == 1) {
           PVector xy = toXY(new PVector(j,i));
-          //println("rect: ", xy.x, xy.y, TILE_SIZE_W, TILE_SIZE_H);
+          fill(225, 78, 44);
           rect(xy.x, xy.y, TILE_SIZE_W, TILE_SIZE_H);
+        } else if (tiles[j][i] == 2) {
+          PVector xy = toXY(new PVector(j,i));
+          fill(255,220,0);
+          ellipse(xy.x + TILE_SIZE_W/2, xy.y + TILE_SIZE_H/2, 25, 25);
         }
       }
     }
@@ -118,10 +106,10 @@ class Level {
     PVector tileMin = toTile(x, y);
     PVector tileMax = toTile(x+w-1, y);
     float distance = Float.MAX_VALUE;
-
+     //<>//
     for (int i = 0; i <= tileMax.x - tileMin.x; i++) {
       for (int j = int(tileMin.y); j < tiles[0].length && j >= 0; j+=increment) {
-        if (tiles[int(tileMin.x + i)][j] == 1) {
+        if (int(tileMin.x + i) < NUM_TILES_W && tiles[int(tileMin.x + i)][j] == 1) {
           float currDistance = toXY(new PVector(int(tileMin.x + i),j)).y - y;
           currDistance = increment < 0 ? currDistance + TILE_SIZE_H : currDistance;
           if (abs(currDistance) < abs(distance)) {
