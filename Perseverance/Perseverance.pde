@@ -1,3 +1,6 @@
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 // GAME DIMENSIONS
 public static final int WIDTH = 1200;
 public static final int HEIGHT = 800;
@@ -15,16 +18,21 @@ public static final int MENU = 1;
 public static final int SAVES = 2;
 public static final int LEVEL = 3;
 public static final int UPGRADES = 4;
+public static final int HOWTO = 5;
 
 public static final long TIMER_MAX = 60000;
 public static final long SPEED_MAX = 10;
 public static final long JETPACK_MAX = 300;
 public static final int LIVES_MAX = 10;
+public static final int AMMO_MAX = 15;
+public static final float ACCURACY_MAX = 0;
+
 
 public static int gameId = 0;
 
 // GAME
 int gameState;
+boolean overwrite;
 Level level;
 Astronaut astronaut;
 Rock rock;
@@ -35,12 +43,14 @@ public static long currTimerMax = 10000;
 public static float currSpeedMax = 2;
 public static long currJetpackMax = 15;
 public static int currLivesMax = 1;
-public static int currAmmo = 90;
+public static int currAmmo = 100;
 public static float currAccuracy = 0.9;
 
 // IMAGES
 public static PImage menuImg;
 public static PImage upgradesImg;
+public static PImage howtoImg;
+public static PImage savesImg;
 public static PImage mountainsImg;
 
 public static PImage l1;
@@ -63,6 +73,8 @@ public static PImage[] rockImg = new PImage[5];
 // menu buttons
 Button newGameBtn;
 Button continueGameBtn;
+Button howtoBtn;
+Button backBtn;
 
 // saves buttons
 UpgradeButton saveBtn1;
@@ -78,8 +90,8 @@ UpgradeButton upBtn4;
 UpgradeButton upBtn5;
 UpgradeButton upBtn6;
 
-// save game summaries
-String[] saveSummaries = new String[3];
+// saved games
+JSONObject[] saves = new JSONObject[3];
 
 // A force generator that applies a force specified by the user.
 UserForce leftForce ;
@@ -102,6 +114,8 @@ void setup() {
   menuImg = loadImage("menu.jpg");
   upgradesImg = loadImage("upgrades.jpg");
   mountainsImg = loadImage("mountains.png");
+  savesImg = loadImage("saves.jpg");
+  howtoImg = loadImage("howto.jpg");
   l1 = loadImage("left1.png");
   l2 = loadImage("left2.png");
   l3 = loadImage("left3.png");
@@ -121,8 +135,10 @@ void setup() {
     rockImg[i] = loadImage("rock" + i + ".png");
   }
   
-  newGameBtn = new Button(450, 300, 300, 120, "New Game");
-  continueGameBtn = new Button(450, 500, 300, 120, "Continue Game");
+  newGameBtn = new Button(450, 260, 300, 120, "New Game");
+  continueGameBtn = new Button(450, 430, 300, 120, "Continue Game");
+  howtoBtn = new Button(450, 600, 300, 120, "How To");
+  backBtn = new Button(50, 80, 150, 55, "Back To Menu");
 
   saveBtn1 = new UpgradeButton(400, 250, 400, 125, "Save slot 1");
   saveBtn2 = new UpgradeButton(400, 425, 400, 125, "Save slot 2");
@@ -138,6 +154,7 @@ void setup() {
   
   astronaut = new Astronaut();
   gameState = MENU; 
+  overwrite = false;
   rock = new Rock();
   ammo = new ArrayList();
   
@@ -223,10 +240,18 @@ void draw() {
       checkPickups();
 
       drawLevelStats();
+      
+      if (astronaut.position.x + astronaut.astroWidth > FULL_WIDTH) {
+        gameState = UPGRADES;
+      }
       break;
       
     case UPGRADES:
       drawUpgrades();
+      break;
+    
+    case HOWTO:
+      drawHowto();
       break;
   }
 }
@@ -305,18 +330,31 @@ void mouseClicked() {
   switch (gameState) {
     case MENU:
       if (newGameBtn.inButton(mouseX, mouseY)) {
-        gameState = LEVEL;
-        levelSetup();
-      } else if (continueGameBtn.inButton(mouseX, mouseY)) {
+        //gameState = LEVEL;
+        //levelSetup();
         gameState = SAVES;
+        overwrite = true;
         for (int i = 0; i < 3; i++) {
-          if (new File("saves/save" + (i+1) + ".json").isFile()) {
-            JSONObject json = loadJSONObject("saves/save" + (i+1) + ".json");
-            saveSummaries[i] = "Save";
-          } else {
-            saveSummaries[i] = "Empty";
+          try {
+            JSONObject json = loadJSONObject("data/save" + i + ".json");
+            saves[i] = json;
+          } catch(NullPointerException e) {
+            saves[i] = null;            
           }
         }
+      } else if (continueGameBtn.inButton(mouseX, mouseY)) {
+        gameState = SAVES;
+        overwrite = false;
+        for (int i = 0; i < 3; i++) {
+          try {
+            JSONObject json = loadJSONObject("data/save" + i + ".json");
+            saves[i] = json;
+          } catch(NullPointerException e) {
+            saves[i] = null;            
+          } //<>//
+        }
+      } else if (howtoBtn.inButton(mouseX, mouseY)) {
+        gameState = HOWTO;
       }
       break;
     case UPGRADES:
@@ -336,11 +374,55 @@ void mouseClicked() {
         gameState = LEVEL;
         levelSetup();
       }
+      break;
+      
+    case SAVES:
+      if (saveBtn1.inButton(mouseX, mouseY)) {
+        if (overwrite) {
+          clearGame();
+          gameState = LEVEL;
+          levelSetup();
+          gameId = 0;
+        } else if (saves[0] != null) {
+          jsonToGame(saves[0]);
+          gameState = UPGRADES;
+          gameId = 0;
+        }
+      } else if (saveBtn2.inButton(mouseX, mouseY)) {
+        if (overwrite) {
+          clearGame();
+          gameState = LEVEL;
+          levelSetup();
+          gameId = 1;
+        } else if (saves[1] != null) {
+          jsonToGame(saves[1]);
+          gameState = UPGRADES;
+          gameId = 1;
+        }
+      } else if (saveBtn3.inButton(mouseX, mouseY)) {
+        if (overwrite) {
+          clearGame();
+          gameState = LEVEL;
+          levelSetup();
+          gameId = 2;
+        } else if (saves[2] != null) {
+          jsonToGame(saves[2]);
+          gameState = UPGRADES;
+          gameId = 2;
+        }
+      }
+  }
+  
+  if (backBtn.inButton(mouseX, mouseY)) {
+    if (gameState == UPGRADES) {
+      saveGame();
+    }
+    gameState = MENU;
   }
 }
 
 void upgradeTimer() {
-  if (coins > 10) {
+  if (coins >= 10) {
     if (currTimerMax < TIMER_MAX) {
       currTimerMax += 1000;
       coins -= 10;
@@ -349,47 +431,56 @@ void upgradeTimer() {
 }
 
 void upgradeSpeed() {
-  if (true) {
+  if (coins >= 15) {
     if (currSpeedMax < SPEED_MAX) {
       currSpeedMax += 0.5;
+      coins -= 15;
     }
   }
 }
 
 void upgradeJetpack() {
-  if (true) {
+  if (coins >= 10) {
     if (currJetpackMax < JETPACK_MAX) {
       currJetpackMax += 15;
+      coins -= 10;
     }
   }
 }
 
 void upgradeLives() {
-  if (true) {
+  if (coins >= 20) {
     if (currLivesMax < LIVES_MAX) {
       currLivesMax += 1;
+      coins -= 20;
     }
   }
 }
 
 void upgradeAmmoReload() {
-  if (true) {
-    if (currAmmo > 15) {
+  if (coins >= 10) {
+    if (currAmmo > AMMO_MAX) {
       currAmmo -= 5;
+      coins -= 10;
     }
   }
 }
 
 void upgradeAmmoAccuracy() {
-  if (true) {
-    if (currAccuracy > 0) {
+  if (coins >= 15) {
+    if (currAccuracy > ACCURACY_MAX) {
       currAccuracy -= 0.1;
+      coins -= 15;
     }
   }
 }
 
 void checkPickups() {
   PVector tile = toTile(astronaut.position.x + astronaut.astroWidth/2, astronaut.position.y + astronaut.astroHeight/2);
+  if (int(tile.x) >= 120) {
+    println("why"); //<>//
+  }
+  tile = toTile(astronaut.position.x + astronaut.astroWidth/2, astronaut.position.y + astronaut.astroHeight/2);
   if (astronaut.position.y > 0 && astronaut.position.x < FULL_WIDTH && level.tiles[int(tile.x)][int(tile.y)] == 2) {
     level.tiles[int(tile.x)][int(tile.y)] = 0;
     coins += 5;
@@ -413,14 +504,16 @@ void drawMenu() {
   image(menuImg, 0, 0);
   newGameBtn.draw();
   continueGameBtn.draw();
+  howtoBtn.draw();
 }
 
 // saves screen
 void drawSaves() {
-  image(upgradesImg, 0, 0);
-  saveBtn1.draw(saveSummaries[0]);
-  saveBtn2.draw(saveSummaries[1]);
-  saveBtn3.draw(saveSummaries[2]);
+  image(savesImg, 0, 0);
+  saveBtn1.draw(getSaveSummary(saves[0]));
+  saveBtn2.draw(getSaveSummary(saves[1]));
+  saveBtn3.draw(getSaveSummary(saves[2]));
+  backBtn.draw();
 }
 
 // upgrades screen
@@ -436,14 +529,27 @@ void drawUpgrades() {
   fill(255,255,255);
   text("Click to upgrade", width/2, 250);
   
-  upBtn1.draw(currTimerMax/1000 + " secs        10 coins");
-  upBtn2.draw(nf(currSpeedMax,0,1) + " m/s        10 coins");
-  upBtn3.draw(currJetpackMax/3 + "%        10 coins");
-  upBtn4.draw("Level " + currLivesMax + "        10 coins");
-  upBtn5.draw(currAmmo + "        10 coins");
-  upBtn6.draw("Level " + nf((1-currAccuracy)*10,0,0) + "        10 coins");
+  String upBtn1Text = currTimerMax < TIMER_MAX ? "10 coins" : "MAX";
+  String upBtn2Text = currSpeedMax < SPEED_MAX ? "15 coins" : "MAX";
+  String upBtn3Text = currJetpackMax < JETPACK_MAX ? "10 coins" : "MAX";
+  String upBtn4Text = currLivesMax < LIVES_MAX ? "20 coins" : "MAX";
+  String upBtn5Text = currAmmo > 15 ? "10 coins" : "MAX";
+  String upBtn6Text = currAccuracy > 0 ? "15 coins" : "MAX";
+  
+  upBtn1.draw(currTimerMax/1000 + " secs        " + upBtn1Text);
+  upBtn2.draw(nf(currSpeedMax,0,1) + " m/s        " + upBtn2Text);
+  upBtn3.draw(currJetpackMax/3 + "%        " + upBtn3Text);
+  upBtn4.draw("Level " + currLivesMax + "        " + upBtn4Text);
+  upBtn5.draw("Level " + (21-(currAmmo/5)) + "        " + upBtn5Text);
+  upBtn6.draw("Level " + nf((1-currAccuracy)*10,0,0) + "        " + upBtn6Text);
   playBtn.draw();
+  backBtn.draw();
   textAlign(LEFT);
+}
+
+void drawHowto() {
+  image(howtoImg, 0, 0);
+  backBtn.draw();
 }
 
 void drawLevelStats() {
@@ -522,18 +628,50 @@ void drawAmmo() {
 
 void saveGame() {
   JSONObject json = gameToJson();
-  saveJSONObject(json, "saves/save" + gameId + ".json");
+  saveJSONObject(json, "data/save" + gameId + ".json");
 }
 
 JSONObject gameToJson() {
   JSONObject json = new JSONObject();
-  json.setInt("runs", 0);
+  //json.setInt("runs", 0);
+  json.setInt("coins", coins);
   json.setLong("timer", currTimerMax);
   json.setFloat("speed", currSpeedMax);
-  json.setLong("jetpack", currTimerMax);
-  json.setLong("lives", currLivesMax);
+  json.setLong("jetpack", currJetpackMax);
+  json.setInt("lives", currLivesMax);
   json.setInt("ammo", currAmmo);
+  json.setFloat("accuracy", currAccuracy);
+  json.setString("date", new SimpleDateFormat("dd-MM-yyyy").format(new Date())); //<>//
+
   return json;
+}
+
+void jsonToGame(JSONObject json) {
+  coins = json.getInt("coins");
+  currTimerMax = json.getLong("timer");
+  currSpeedMax = json.getFloat("speed");
+  currJetpackMax = json.getLong("jetpack");
+  currLivesMax = json.getInt("lives");
+  currAmmo = json.getInt("ammo");
+  currAccuracy = json.getFloat("accuracy"); //<>//
+}
+
+String getSaveSummary(JSONObject j) {
+  if (j == null) {
+    return "Empty";
+  } else {
+    return "Last played: " + j.getString("date");
+  }
+}
+
+void clearGame() {
+  coins = 0;
+  currTimerMax = 10000;
+  currSpeedMax = 2;
+  currJetpackMax = 15;
+  currLivesMax = 1;
+  currAmmo = 100;
+  currAccuracy = 0.9;
 }
 
 public static PVector toTile(float x, float y) {
@@ -558,7 +696,6 @@ boolean roverCollision() {
       if (rover.hits == currLivesMax) {
         gameState = UPGRADES;
         saveGame();
-        //gameState = MENU;
       }
       return true; 
     }

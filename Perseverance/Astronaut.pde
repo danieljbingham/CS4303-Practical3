@@ -190,10 +190,10 @@ class Astronaut extends Particle {
       velocity.x = 0;
     }
 
-    if (position.x + astroWidth > FULL_WIDTH) {
+    /*if (position.x + astroWidth > FULL_WIDTH) {
       position.x = FULL_WIDTH - astroWidth;
       velocity.x = 0;
-    }
+    }*/
 
     if (position.y + astroHeight > FLOOR_Y) {
       position.y = FLOOR_Y - astroHeight;
@@ -209,12 +209,12 @@ class Astronaut extends Particle {
   }
   
   void jump(long max) {
-    if (jetpackAvailable(max)) {
+    /*if (jetpackAvailable(max)) {
         velocity.y = -2.5;
     } else {
-        velocity.y = -9;
-    }
-    velocity.y = -9;
+        velocity.y = -9.25;
+    }*/
+    velocity.y = -9.25;
   }
   
   

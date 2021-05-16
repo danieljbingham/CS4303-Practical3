@@ -53,6 +53,9 @@ final class Rock extends Particle {
     velocity = new PVector(xVel, yVel) ;
     forceAccumulator = new PVector(0, 0) ;
     active = true;
+    
+    resize = random(5,11)/10;
+    radius = int((rockImg[0].width/2)*resize);
   }
   
   void integrate() {
