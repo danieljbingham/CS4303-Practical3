@@ -106,7 +106,7 @@ class Level {
     PVector tileMin = toTile(x, y);
     PVector tileMax = toTile(x+w-1, y);
     float distance = Float.MAX_VALUE;
-     //<>//
+     //<>// //<>//
     for (int i = 0; i <= tileMax.x - tileMin.x; i++) {
       for (int j = int(tileMin.y); j < tiles[0].length && j >= 0; j+=increment) {
         if (int(tileMin.x + i) < NUM_TILES_W && tiles[int(tileMin.x + i)][j] == 1) {
