@@ -45,8 +45,8 @@ final class Rock extends Particle {
   
   // fire rock using given params
   void fireRock(int x) {
-    float xVel = random(-12, -6);
-    float yVel = random(-8, -3);
+    float xVel = random(-14, -5);
+    float yVel = random(-9, -2);
     float startingY = random(height-150, height-200);
     
     position = new PVector(x, startingY) ;

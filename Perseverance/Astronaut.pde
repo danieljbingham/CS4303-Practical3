@@ -70,6 +70,10 @@ class Astronaut extends Particle {
     } else {
       position.add(velocity) ;
       if (position.x < 0) position.x = 0;
+      if (position.y < 0) {
+        position.y = 0;
+        velocity.y = 1;
+      }
     }
     
     // update position
@@ -96,6 +100,33 @@ class Astronaut extends Particle {
     
   }
 
+  // update position and velocity
+  void integrateWithoutCollision() {
+    // If infinite mass, we don't integrate
+    if (invMass <= 0f) return ;
+        
+    boolean resetXVel = false;
+    
+    position.x += velocity.x;
+    if (position.x < width/2) position.x = width/2;
+    if (position.x > FULL_WIDTH - (width/2)) position.x = FULL_WIDTH - (width/2);
+    
+    // NB If you have a constant acceleration (e.g. gravity) start with
+    //    that then add the accumulated force / mass to that.
+    PVector resultingAcceleration = forceAccumulator.get() ;
+    resultingAcceleration.mult(invMass) ;
+
+    // update velocity
+    velocity.add(resultingAcceleration) ;
+    // apply damping - disabled when Drag force present
+    velocity.mult(.88f) ;
+    
+    // Clear accumulator
+    forceAccumulator.x = 0 ;
+    
+    if (resetXVel) velocity.x = 0;
+        
+  }
    
   void reset() {
     rightFacing = true;

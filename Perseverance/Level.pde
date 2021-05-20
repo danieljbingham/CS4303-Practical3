@@ -4,13 +4,14 @@ class Level {
   Camera camera;
   
   int[][] tiles;
+  boolean showStroke;
   
-  public Level() {
+  public Level(int levelNo) {
     camera = new Camera();
-
+    showStroke = false;
     tiles = new int[NUM_TILES_W][NUM_TILES_H];
     
-    Table table = loadTable("level1.csv", "csv");
+    Table table = loadTable("level" + levelNo + ".csv", "csv");
     
     for (int i = 0; i < table.getColumnCount(); i++) {
       for (int j = 0; j < table.getRowCount(); j++) {
@@ -20,13 +21,20 @@ class Level {
 
   }
   
+  public Level() {
+    camera = new Camera();
+    showStroke = true;
+    tiles = new int[NUM_TILES_W][NUM_TILES_H];
+  }
+  
   void draw() {
-    //for (int i = 0; i < 10; i++) {
-    //  rect(platforms[i].x, platforms[i].y, 120, 40);
-    //}
-    
+
     for (int i = 0; i < tiles[0].length; i++) {
       for (int j = 0; j < tiles.length; j++) {
+        if (showStroke) {
+          stroke(255,255,255);
+        }
+        
         if (tiles[j][i] == 1) {
           PVector xy = toXY(new PVector(j,i));
           fill(225, 78, 44);
@@ -35,6 +43,10 @@ class Level {
           PVector xy = toXY(new PVector(j,i));
           fill(255,220,0);
           ellipse(xy.x + TILE_SIZE_W/2, xy.y + TILE_SIZE_H/2, 25, 25);
+        } else if (tiles[j][i] == 0 && i <= 12) {
+          PVector xy = toXY(new PVector(j,i));
+          noFill();
+          rect(xy.x, xy.y, TILE_SIZE_W, TILE_SIZE_H);
         }
       }
     }
@@ -106,7 +118,7 @@ class Level {
     PVector tileMin = toTile(x, y);
     PVector tileMax = toTile(x+w-1, y);
     float distance = Float.MAX_VALUE;
-     //<>// //<>//
+     //<>//
     for (int i = 0; i <= tileMax.x - tileMin.x; i++) {
       for (int j = int(tileMin.y); j < tiles[0].length && j >= 0; j+=increment) {
         if (int(tileMin.x + i) < NUM_TILES_W && tiles[int(tileMin.x + i)][j] == 1) {
@@ -121,5 +133,31 @@ class Level {
     }
     
     return distance;
+  }
+  
+  void setCell(float x, float y, int cellType) {
+    PVector tile = toTile(x, y);
+    PVector tileMax = toTile(FULL_WIDTH + 1, y);
+    
+    if (int(tile.y) >= 0 && int(tile.y) <= 12 && int(tile.x) < int(tileMax.x) && int(tile.x) >= 0) {
+      if (!(tile.x == 2 && (tile.y == 11 || tile.y == 12))) {
+        tiles[int(tile.x)][int(tile.y)] = cellType;
+      }
+    }
+  }
+  
+  void toCSV(int levelNo) {
+    Table table = new Table();
+    for (int i = 0; i < NUM_TILES_W; i++) {
+      table.addColumn();
+    }
+    
+    for (int i = 0; i < tiles[0].length; i++) {
+      TableRow row = table.addRow();
+      for (int j = 0; j < tiles.length; j++) {
+        row.setInt(j, tiles[j][i]);
+      }
+    }
+    saveTable(table, "data/level" + levelNo + ".csv");
   }
 }
